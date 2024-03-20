@@ -1,0 +1,11 @@
+.venv
+*.pyc
+*.swp
+*.swo
+data
+venv
+.env
+.direnv
+.DS_STORE
+node_modules
+py/*.egg-info/
