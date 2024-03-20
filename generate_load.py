@@ -4,10 +4,13 @@ import multiprocessing
 import random
 import threading
 import time
+from datetime import datetime
 
 import braintrust
 import tiktoken
 from faker import Faker
+
+import monkey_patch  # noqa: F401
 
 APPS = ["mobile", "web", "backend", "frontend", "api", "cli", "other"]
 REGIONS = ["us-west", "us-east", "eu-west", "eu-east", "ap-southeast", "ap-northeast"]
@@ -34,9 +37,11 @@ def run_request():
         ),
     )
 
-    pretend_duration = random.random() * 20
-    pretend_offset = random.random() * 3600 * 24
+    pretend_duration = random.random() * 120
+    pretend_offset = random.random() * 3600 * 24 * 30
     pretend_start = time.time() - pretend_offset - pretend_duration
+
+    start_ts = datetime.fromtimestamp(pretend_start).isoformat()
 
     current_span = logger
     spans = []
@@ -68,13 +73,17 @@ def run_request():
             scores=scores,
             tags=tags or None,
             metadata=metadata,
+            created=start_ts,
         )
         span.log(input=input_text)
         spans.append(span)
         current_span = span
 
     oai_span = current_span.start_span(
-        name="openai", span_attributes={"type": "llm"}, start_time=pretend_start
+        name="openai",
+        span_attributes={"type": "llm"},
+        start_time=pretend_start,
+        created=start_ts,
     )
     oai_span.log(
         input=[
@@ -167,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--total-requests",
         type=int,
-        default=100000,
+        default=100,
         help="Total number of requests before quitting",
     )
     parser.add_argument(
