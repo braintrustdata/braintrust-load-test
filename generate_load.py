@@ -9,6 +9,10 @@ import braintrust
 import tiktoken
 from faker import Faker
 
+APPS = ["mobile", "web", "backend", "frontend", "api", "cli", "other"]
+REGIONS = ["us-west", "us-east", "eu-west", "eu-east", "ap-southeast", "ap-northeast"]
+USER_TENURE = ["new", "returning", "loyal"]
+
 
 def generate_n_tokens(tokenizer, fake, tokens):
     words = fake.sentence(tokens * 2)
@@ -39,6 +43,7 @@ def run_request():
     for i in range(args.spans_per_request - 1):
         scores = {}
         tags = []
+        metadata = {}
         if i == 0:
             if random.random() < args.sampling_rate:
                 scores["Factuality"] = random.random()
@@ -52,12 +57,17 @@ def run_request():
 
             scores["Quality"] = random.random()
 
+        metadata["app"] = random.choice(APPS)
+        metadata["region"] = random.choice(REGIONS)
+        metadata["user_tenure"] = random.choice(USER_TENURE)
+
         span = current_span.start_span(
             name=f"span-{i}",
             span_attributes={"type": "function"},
             start_time=pretend_start,
             scores=scores,
             tags=tags or None,
+            metadata=metadata,
         )
         span.log(input=input_text)
         spans.append(span)
@@ -102,7 +112,11 @@ def runner_thread(idx, total_requests):
     start = time.time()
     for i in range(total_requests):
         run_request()
-        if i % args.flush_interval == 0 or i == total_requests - 1:
+
+        with global_total_lock:
+            global_total += 1
+
+        if (i + 1) % args.flush_interval == 0 or i == total_requests - 1:
             pre_flush = time.time()
             logger.flush()
             post_flush = time.time()
@@ -119,8 +133,6 @@ def runner_thread(idx, total_requests):
                 f"Target req/s: {args.requests_per_day / 86400:>8.2f}    "
             )
 
-            with global_total_lock:
-                global_total += new_total - total_flushed
             total_flushed = new_total
 
     logger.flush()
@@ -136,12 +148,15 @@ def reporter_thread(done):
         current_time = time.time()
         diff_time = current_time - last_measure
         total_time = current_time - start
-        last_measure = current_time
 
         rate = diff / diff_time
         total_rate = global_total / total_time
+
+        last_measure = current_time
+        last_total = global_total
+
         print(
-            f"-- Processed {diff:<3} requests in {diff_time:>6.2f}.    "
+            f"-- Processed {diff:<3} requests in {diff_time:>6.2f}s.    "
             f"Rate: {rate:>8.2f} requests/s.    "
             f"Total rate: {total_rate:>8.2f} requests/s."
         )
