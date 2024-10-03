@@ -16,6 +16,7 @@ APPS = ["mobile", "web", "backend", "frontend", "api", "cli", "other"]
 REGIONS = ["us-west", "us-east", "eu-west", "eu-east", "ap-southeast", "ap-northeast"]
 USER_TENURE = ["new", "returning", "loyal"]
 
+
 def generate_n_tokens(tokenizer, fake, tokens):
     words = fake.sentence(tokens * 2)
     tokens = tokenizer.encode(words)[:tokens]
@@ -84,7 +85,6 @@ def run_request():
         start_time=pretend_start,
         created=start_ts,
     )
-
     oai_span.log(
         input=[
             {"role": "system", "content": system_prompt},
