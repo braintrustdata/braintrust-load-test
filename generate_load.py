@@ -101,6 +101,9 @@ def run_request():
             "total_tokens": system_prompt_tokens
             + input_text_tokens
             + output_text_tokens,
+            "tokens": system_prompt_tokens
+            + input_text_tokens
+            + output_text_tokens,
             "time_to_first_token": pretend_duration / random.randint(2, 10),
         },
     )
