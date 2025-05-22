@@ -3,9 +3,7 @@
 To run it, first install [uv](https://github.com/astral-sh/uv), and then run
 
 ```bash
-make develop
-source .venv/bin/activate
-python generate_load.py --threads 1 --total-requests 1000
+uv run generate_load.py --threads 1 --total-requests 1000
 ```
 
 To run without `uv`, then do
